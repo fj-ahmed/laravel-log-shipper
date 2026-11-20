@@ -1,8 +1,8 @@
 <?php
 
-namespace FyxifyLogs;
+namespace FjAhmed\LogShipper;
 
-// Mirrors fyxify-logs/src/mask.js — keep the two in sync.
+// The collector service re-applies the same rules on ingest — keep the two in sync.
 class Masker
 {
     public const MASK = '********';

@@ -1,11 +1,11 @@
 <?php
-// Run: php tests/masker-check.php .   (from laravel-plugin/) — parity with fyxify-logs/test/core.test.js
+// Run: php tests/masker-check.php .   (from the package root) — keep in parity with the collector's masking tests
 function env($k, $d = null) { return $d; }
 function storage_path($p = '') { return $p; }
 require $argv[1] . '/src/Masker.php';
-$c = require $argv[1] . '/config/fyxify-logs.php';
-$m = new FyxifyLogs\Masker($c['mask_keys'], $c['mask_exact_keys']);
-$M = FyxifyLogs\Masker::MASK;
+$c = require $argv[1] . '/config/log-shipper.php';
+$m = new FjAhmed\LogShipper\Masker($c['mask_keys'], $c['mask_exact_keys']);
+$M = FjAhmed\LogShipper\Masker::MASK;
 $jwt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwcyJ9.753CDDZ0K0EurXY5j5aSFoctuZN3';
 $checks = [
   [$m->mask(['email'=>'a@b.c','password'=>'x','headers'=>['authorization'=>['Bearer abc']],'otp'=>'1','shipping'=>'ok','_token'=>$jwt]),

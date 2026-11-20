@@ -1,11 +1,11 @@
 <?php
 
-namespace FyxifyLogs;
+namespace FjAhmed\LogShipper;
 
-use FyxifyLogs\Console\RecordRuns;
-use FyxifyLogs\Http\LogRequests;
-use FyxifyLogs\Logging\CollectorHandler;
-use FyxifyLogs\Logging\LogTap;
+use FjAhmed\LogShipper\Console\RecordRuns;
+use FjAhmed\LogShipper\Http\LogRequests;
+use FjAhmed\LogShipper\Logging\CollectorHandler;
+use FjAhmed\LogShipper\Logging\LogTap;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
@@ -20,49 +20,49 @@ use Monolog\Logger;
 /**
  * Everything is opted in from config/logging.php, per channel:
  *
- *   'microservice' => ['driver' => 'fyxify'],                                  // send only, no file
- *   'twilio'       => ['driver' => 'daily', 'path' => ..., 'fyxify' => true],  // keep the file AND send
- *   'webservice'   => ['driver' => 'fyxify', 'requests' => ['api'], 'paths' => [...], 'except' => [...], 'ajax' => bool], // see LogRequests
- *   'runs'         => ['driver' => 'fyxify', 'runs' => true],                 // artisan commands (crons) + queue jobs
+ *   'microservice' => ['driver' => 'shipper'],                                  // send only, no file
+ *   'twilio'       => ['driver' => 'daily', 'path' => ..., 'shipper' => true],  // keep the file AND send
+ *   'webservice'   => ['driver' => 'shipper', 'requests' => ['api'], 'paths' => [...], 'except' => [...], 'ajax' => bool], // see LogRequests
+ *   'runs'         => ['driver' => 'shipper', 'runs' => true],                 // artisan commands (crons) + queue jobs
  *
- * Stored channel name = 'fyxify' => '<name>' if given, else the file name of 'path' (logs/twilio.log -> twilio),
- * else the channel key. Connection settings come from .env (FYXIFY_LOGS_*), see config/fyxify-logs.php.
+ * Stored channel name = 'shipper' => '<name>' if given, else the file name of 'path' (logs/twilio.log -> twilio),
+ * else the channel key. Connection settings come from .env (LOG_SHIPPER_*), see config/log-shipper.php.
  */
-class FyxifyLogsServiceProvider extends ServiceProvider
+class LogShipperServiceProvider extends ServiceProvider
 {
     /** @var array<string, array{label: string, config: array}> opted-in channels */
     private array $channels = [];
 
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/fyxify-logs.php', 'fyxify-logs');
+        $this->mergeConfigFrom(__DIR__ . '/../config/log-shipper.php', 'log-shipper');
 
         $this->app->singleton(Collector::class, fn($app) => new Collector(
-            $app['config']['fyxify-logs'],
-            new Masker($app['config']['fyxify-logs.mask_keys'], $app['config']['fyxify-logs.mask_exact_keys']),
+            $app['config']['log-shipper'],
+            new Masker($app['config']['log-shipper.mask_keys'], $app['config']['log-shipper.mask_exact_keys']),
         ));
 
         // Runs in register() so the driver and taps exist before any channel is resolved.
-        $this->callAfterResolving('log', fn($log) => $log->extend('fyxify', fn($app, array $config) => new Logger(
-            $config['fyxify_label'] ?? 'fyxify',
-            [new CollectorHandler($app->make(Collector::class), $config['fyxify_label'] ?? 'fyxify', strtolower($config['level'] ?? 'debug'))],
+        $this->callAfterResolving('log', fn($log) => $log->extend('shipper', fn($app, array $config) => new Logger(
+            $config['shipper_label'] ?? 'shipper',
+            [new CollectorHandler($app->make(Collector::class), $config['shipper_label'] ?? 'shipper', strtolower($config['level'] ?? 'debug'))],
         )));
 
         $config = $this->app['config'];
         foreach ((array) $config['logging.channels'] as $name => $channel) {
-            $isDriver = ($channel['driver'] ?? null) === 'fyxify';
-            if (!$isDriver && empty($channel['fyxify'])) {
+            $isDriver = ($channel['driver'] ?? null) === 'shipper';
+            if (!$isDriver && empty($channel['shipper'])) {
                 continue;
             }
-            $label = is_string($channel['fyxify'] ?? null) ? $channel['fyxify']
+            $label = is_string($channel['shipper'] ?? null) ? $channel['shipper']
                 : (isset($channel['path']) ? preg_replace('/\.log$/', '', basename($channel['path'])) : $name);
             $this->channels[$name] = ['label' => $label, 'config' => $channel];
             if (!empty($channel['requests'])) {
-                $config->set("fyxify-logs.request_channels.$label", $channel); // read by LogRequests, in file order
+                $config->set("log-shipper.request_channels.$label", $channel); // read by LogRequests, in file order
             }
 
             if ($isDriver) {
-                $config->set("logging.channels.$name.fyxify_label", $label); // custom drivers aren't told their name
+                $config->set("logging.channels.$name.shipper_label", $label); // custom drivers aren't told their name
             } else {
                 $level = strtolower($channel['level'] ?? 'debug');
                 $config->set("logging.channels.$name.tap", array_merge($channel['tap'] ?? [], [LogTap::class . ":$label,$level"]));
@@ -72,12 +72,12 @@ class FyxifyLogsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->publishes([__DIR__ . '/../config/fyxify-logs.php' => config_path('fyxify-logs.php')], 'fyxify-logs');
-        if (!$this->channels || !config('fyxify-logs.enabled') || !config('fyxify-logs.project')) {
+        $this->publishes([__DIR__ . '/../config/log-shipper.php' => config_path('log-shipper.php')], 'log-shipper');
+        if (!$this->channels || !config('log-shipper.enabled') || !config('log-shipper.project')) {
             return;
         }
 
-        if (config('fyxify-logs.request_channels')) {
+        if (config('log-shipper.request_channels')) {
             // Global, so it sees every route; logging.php decides which requests are kept (LogRequests::channelFor).
             $this->callAfterResolving(HttpKernel::class, fn($kernel) => $kernel->pushMiddleware(LogRequests::class));
         }

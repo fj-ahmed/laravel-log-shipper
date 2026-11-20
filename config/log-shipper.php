@@ -1,15 +1,18 @@
 <?php
 
 return [
-    'enabled' => env('FYXIFY_LOGS_ENABLED', true),
+    'enabled' => env('LOG_SHIPPER_ENABLED', true),
 
-    // fyxify-logs Node service and this app's schema name in fyxify_logs
-    'url'     => env('FYXIFY_LOGS_URL', 'http://localhost:4000'),
-    'key'     => env('FYXIFY_LOGS_KEY'),
-    'project' => env('FYXIFY_LOGS_PROJECT'),
-    'timeout' => (float) env('FYXIFY_LOGS_TIMEOUT', 2),
+    // Collector service: batches are POSTed to {url}/ingest/{project} with an X-Api-Key header
+    'url'     => env('LOG_SHIPPER_URL', 'http://localhost:4000'),
+    'key'     => env('LOG_SHIPPER_KEY'),
+    'project' => env('LOG_SHIPPER_PROJECT'),
+    'timeout' => (float) env('LOG_SHIPPER_TIMEOUT', 2),
 
-    // What gets sent is chosen per channel in config/logging.php ('driver' => 'fyxify' or 'fyxify' => true).
+    // Request header naming the calling client (stored as 'source'); falls back to the host
+    'source_header' => env('LOG_SHIPPER_SOURCE_HEADER', 'X-Source'),
+
+    // What gets sent is chosen per channel in config/logging.php ('driver' => 'shipper' or 'shipper' => true).
     // The settings below only tune those channels.
 
     // 'runs' channel: wrapper commands that only spawn the real ones (Str::is patterns)

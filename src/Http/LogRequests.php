@@ -1,9 +1,9 @@
 <?php
 
-namespace FyxifyLogs\Http;
+namespace FjAhmed\LogShipper\Http;
 
 use Closure;
-use FyxifyLogs\Collector;
+use FjAhmed\LogShipper\Collector;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -16,9 +16,9 @@ use Throwable;
  * Global middleware, added by the service provider. Which requests are recorded, and under which channel, is
  * declared per channel in config/logging.php (first match wins, in file order):
  *
- *   'admin_webservice' => ['driver' => 'fyxify', 'requests' => ['web'], 'paths' => ['backend/microservices/*']],
- *   'web-portal'       => ['driver' => 'fyxify', 'requests' => ['web'], 'ajax' => true],
- *   'webservice'       => ['driver' => 'fyxify', 'requests' => ['api'], 'except' => ['*profile/online/status']],
+ *   'admin_webservice' => ['driver' => 'shipper', 'requests' => ['web'], 'paths' => ['backend/microservices/*']],
+ *   'web-portal'       => ['driver' => 'shipper', 'requests' => ['web'], 'ajax' => true],
+ *   'webservice'       => ['driver' => 'shipper', 'requests' => ['api'], 'except' => ['*profile/online/status']],
  *
  * 'requests' = middleware groups, aliases or classes on the route (e.g. 'api', 'api.logs', WebserviceLogger::class).
  */
@@ -30,7 +30,7 @@ class LogRequests
 
     public function handle(Request $request, Closure $next): Response
     {
-        // Honour an incoming X-Request-Id (e.g. fyxify -> msnotifications) so calls link across services.
+        // Honour an incoming X-Request-Id (e.g. app -> microservice) so calls link across services.
         $incoming = (string) $request->header('X-Request-Id');
         $this->collector->setRequestId(Str::isUuid($incoming) ? strtolower($incoming) : (string) Str::uuid());
 
@@ -43,7 +43,7 @@ class LogRequests
     public function terminate(Request $request, Response $response): void
     {
         try {
-            if ($channel = self::channelFor($request, config('fyxify-logs.request_channels', []))) {
+            if ($channel = self::channelFor($request, config('log-shipper.request_channels', []))) {
                 $this->record($request, $response, $channel);
             }
         } catch (Throwable) {
@@ -97,11 +97,11 @@ class LogRequests
             'status'      => $response->getStatusCode(),
             'duration_ms' => (int) round((microtime(true) - $started) * 1000),
             'ip'          => $request->getClientIp(),
-            'user_id'     => $this->userId(config('fyxify-logs.guards', [])),
-            'source'      => $request->header('X-Fx-Source', $request->getHost()),
+            'user_id'     => $this->userId(config('log-shipper.guards', [])),
+            'source'      => $request->header(config('log-shipper.source_header', 'X-Source'), $request->getHost()),
             'headers'     => $this->json($masker->mask($request->headers->all())),
             'input'       => $this->json($masker->mask($this->input($request))),
-            'output'      => $masker->maskString($this->output($response, (int) config('fyxify-logs.max_output'))),
+            'output'      => $masker->maskString($this->output($response, (int) config('log-shipper.max_output'))),
         ]);
     }
 

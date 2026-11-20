@@ -1,14 +1,14 @@
 <?php
 
-namespace FyxifyLogs;
+namespace FjAhmed\LogShipper;
 
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
 /**
  * Buffers one request's (or one job's) log entries and ships them in a single POST when the app terminates.
- * If the service is unreachable the batch goes to storage/logs/fyxify-logs-pending-Y-m-d.ndjson
- * (re-ingest with `npm run replay -- <file>` in fyxify-logs). Nothing is dropped.
+ * If the service is unreachable the batch goes to storage/logs/log-shipper-pending-Y-m-d.ndjson
+ * (each line is {project, requests, logs}: re-POST it to the collector once it is back). Nothing is dropped.
  */
 class Collector
 {
@@ -75,7 +75,7 @@ class Collector
 
         if (!$sent) {
             $line = json_encode(['project' => $this->config['project']] + $payload, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
-            @file_put_contents(storage_path('logs/fyxify-logs-pending-' . date('Y-m-d') . '.ndjson'), $line . "\n", FILE_APPEND | LOCK_EX);
+            @file_put_contents(storage_path('logs/log-shipper-pending-' . date('Y-m-d') . '.ndjson'), $line . "\n", FILE_APPEND | LOCK_EX);
         }
         $this->flushing = false;
     }

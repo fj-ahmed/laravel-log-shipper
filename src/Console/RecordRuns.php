@@ -1,8 +1,8 @@
 <?php
 
-namespace FyxifyLogs\Console;
+namespace FjAhmed\LogShipper\Console;
 
-use FyxifyLogs\Collector;
+use FjAhmed\LogShipper\Collector;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Queue\Events\JobExceptionOccurred;
@@ -104,6 +104,6 @@ class RecordRuns
 
     private function skip(?string $command): bool
     {
-        return !$command || Str::is(config('fyxify-logs.except_commands', []), $command);
+        return !$command || Str::is(config('log-shipper.except_commands', []), $command);
     }
 }

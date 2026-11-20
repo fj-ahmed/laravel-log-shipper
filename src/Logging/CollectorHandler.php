@@ -1,8 +1,8 @@
 <?php
 
-namespace FyxifyLogs\Logging;
+namespace FjAhmed\LogShipper\Logging;
 
-use FyxifyLogs\Collector;
+use FjAhmed\LogShipper\Collector;
 use Monolog\Formatter\NormalizerFormatter;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Level;

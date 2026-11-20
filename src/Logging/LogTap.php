@@ -1,8 +1,8 @@
 <?php
 
-namespace FyxifyLogs\Logging;
+namespace FjAhmed\LogShipper\Logging;
 
-use FyxifyLogs\Collector;
+use FjAhmed\LogShipper\Collector;
 
 /** Added to every logging channel by the service provider: 'tap' => [LogTap::class.':microservice,debug'] */
 class LogTap
